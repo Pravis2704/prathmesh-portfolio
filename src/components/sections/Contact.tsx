@@ -14,7 +14,9 @@ import { FaGithub, FaLinkedinIn, FaInstagram} from "react-icons/fa6";
 
 import { portfolioData } from "@/data/portfolio";
 
-type FormStatus = "idle" | "submitting" | "success";
+type FormStatus = "idle" | "submitting" | "success" | "error";
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 export default function Contact() {
   const [status, setStatus] = useState<FormStatus>("idle");
@@ -34,16 +36,25 @@ export default function Contact() {
       return;
     }
 
-    setStatus("submitting");
+    try {
+      setStatus("submitting");
 
-    await new Promise((resolve) => setTimeout(resolve, 900));
+      const response = await fetch(`${apiUrl}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, subject, message }),
+      });
 
-    setStatus("success");
-    form.reset();
+      if (!response.ok) {
+        throw new Error("The server could not accept your message.");
+      }
 
-    setTimeout(() => {
-      setStatus("idle");
-    }, 4000);
+      setStatus("success");
+      form.reset();
+      window.setTimeout(() => setStatus("idle"), 4000);
+    } catch {
+      setStatus("error");
+    }
   }
 
   return (
@@ -268,12 +279,16 @@ export default function Contact() {
                   Message submitted successfully.
                 </div>
               )}
+
+              {status === "error" && (
+                <div className="rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-300">
+                  Unable to send your message right now. Please try again or email me directly.
+                </div>
+              )}
             </form>
 
             <p className="mt-5 text-xs leading-6 text-slate-600">
-              This form currently demonstrates the frontend interaction. We
-              will connect it to a secure backend email service in the next
-              step.
+              Your message is sent securely to the portfolio contact API.
             </p>
           </motion.div>
         </div>
